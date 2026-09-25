@@ -21,6 +21,7 @@ SUBMENUS = MappingProxyType(
         },
         "[ALL]": {"title": translate("Actions", "[ALL]"), "icon": "all"},
         "Grid": {"title": translate("Actions", "Grid"), "icon": "grid"},
+        "Queue": {"title": translate("Queue", "Queue"), "icon": "open-playlist"},
         "Seek Sync": {"title": translate("Actions", "Seek Sync"), "icon": "seek-sync"},
         "Seek Others": {
             "title": translate("Actions", "Sync Others"),
@@ -71,6 +72,7 @@ SECTIONS = MappingProxyType(
             "Single Mode ON / OFF",
             "Previous Video",
             "Next Video",
+            "Queue Next Video",
             "---",
             (
                 "Audio",
@@ -463,6 +465,14 @@ SECTIONS = MappingProxyType(
                 "Seek Sync (Disabled)",
                 "Seek Sync (Percent)",
                 "Seek Sync (Timecode)",
+            ),
+            (
+                "Queue",
+                "Queue Mode",
+                "---",
+                "Queue Slots: %v",
+                "Queue Repeat",
+                "Queue Progress: %v",
             ),
             (
                 "Grid",

@@ -157,6 +157,16 @@ class QStackedLayoutFloating(QStackedLayout):
                     widget.setGeometry(rect)
 
 
+# how long a broken video stays on screen in queue mode before it is skipped
+QUEUE_ERROR_SKIP_MS = 1500
+
+
+def _is_queue_slot(block) -> bool:
+    """Is this cell fed from the queue rather than by its own end action?"""
+
+    return getattr(block._ctx, "is_queue_mode", False) is True
+
+
 def only_initialized(func):
     def wrapper(*args, **kwargs):
         self = args[0]
@@ -337,6 +347,9 @@ class VideoBlock(QWidget):
     is_active_change = pyqtSignal(bool)
     is_audio_present_change = pyqtSignal(bool)
 
+    # queue mode: this cell is done with its video and wants the next one
+    queue_end_reached = pyqtSignal(str)
+
     def __init__(self, video_driver, context, **kwargs):
         super().__init__(**kwargs)
 
@@ -407,6 +420,13 @@ class VideoBlock(QWidget):
         self._seek_settle_timer = QTimer(self)
         self._seek_settle_timer.setSingleShot(True)
         self._seek_settle_timer.setInterval(SEEK_SETTLE_MS)
+
+        # queue mode: a video that fails is skipped after a short look at
+        # the error, so one broken file cannot stall its cell for good
+        self._queue_error_timer = QTimer(self)
+        self._queue_error_timer.setSingleShot(True)
+        self._queue_error_timer.setInterval(QUEUE_ERROR_SKIP_MS)
+        self._queue_error_timer.timeout.connect(self._queue_skip_after_error)
 
         # held until they are done, the pool only has the C++ side of them
         self._screenshot_jobs: set[ScreenshotJob] = set()
@@ -618,6 +638,7 @@ class VideoBlock(QWidget):
         self._is_state_change_in_progress = False
         self.set_status("error")
         self.cleanup()
+        self._queue_schedule_error_skip()
 
     def network_error(self):
         if self._schedule_network_retry():
@@ -629,6 +650,7 @@ class VideoBlock(QWidget):
         self._is_state_change_in_progress = False
         self.set_status("network-error")
         self.cleanup()
+        self._queue_schedule_error_skip()
 
     def _schedule_network_retry(self) -> bool:
         """Try the video again later instead of giving up on it.
@@ -2424,7 +2446,13 @@ class VideoBlock(QWidget):
             or self.video_params.loop_end is not None
         )
 
-        return is_segment or self.video_params.end_action == VideoEndAction.LOOP_FILE
+        if is_segment:
+            return True
+
+        if _is_queue_slot(self):
+            return False
+
+        return self.video_params.end_action == VideoEndAction.LOOP_FILE
 
     def set_drop_indicator(self, indicator: DropIndicator):
         self._drop_indicator = indicator
@@ -2553,6 +2581,7 @@ class VideoBlock(QWidget):
             self.video_params.end_action == VideoEndAction.LOOP_FILE
             and self.video_params.loop_start is None
             and not self.video_params.is_start_random
+            and not _is_queue_slot(self)
         )
 
         # VLC has already looped it seamlessly, which is the whole point
@@ -2576,6 +2605,10 @@ class VideoBlock(QWidget):
             or self.video_params.loop_start is not None
         ):
             self._loop_to_start()
+            return
+
+        if _is_queue_slot(self):
+            self.queue_end_reached.emit(self.id)
             return
 
         end_action = self.video_params.end_action
@@ -3492,6 +3525,68 @@ class VideoBlock(QWidget):
         self._default_title = None
 
         self.set_video(self.video_params)
+
+    # --- queue mode ---
+
+    @property
+    def is_queue_slot(self) -> bool:
+        return _is_queue_slot(self)
+
+    def queue_skip(self):
+        """Give this cell the next video from the queue right now."""
+
+        if _is_queue_slot(self):
+            self.queue_end_reached.emit(self.id)
+
+    def _queue_schedule_error_skip(self):
+        if _is_queue_slot(self) and not self._is_closing:
+            self._queue_error_timer.start()
+
+    def _queue_skip_after_error(self):
+        if self._is_error and not self._is_closing and _is_queue_slot(self):
+            self.queue_end_reached.emit(self.id)
+
+    def queue_load(self, template: Video):
+        """Play the next queued video in this very cell.
+
+        The cell keeps its identity and its own settings (volume, mute,
+        aspect, zoom, speed, ...), so the grid does not move and the other
+        cells never notice. Only what belongs to the file itself is taken
+        from the queue.
+        """
+
+        if self.video_params is None or self._is_closing:
+            return
+
+        self._queue_error_timer.stop()
+
+        params = self.video_params
+
+        is_same_file = params.uri == template.uri
+        if is_same_file and self.is_video_initialized and not self._is_error:
+            self.seek(self.loop_start)
+            self.set_pause(False)
+            return
+
+        params.uri = template.uri
+        params.title = template.title
+        params.current_position = 0
+        params.loop_start = None
+        params.loop_end = None
+        params.video_track_id = None
+        params.audio_selection = template.audio_selection.model_copy(deep=True)
+        params.subtitle_selection = template.subtitle_selection.model_copy(deep=True)
+        params.external_audio = list(template.external_audio)
+        params.external_subtitles = list(template.external_subtitles)
+        params.playback_state = VideoInitialState.PLAYING
+
+        self.loop_start_change.emit(0)
+        self.loop_end_change.emit(100.0)
+
+        self._title = None
+        self._default_title = None
+
+        self.set_video(params)
 
     def rename(self):
         new_data = QVideoRenameDialog.get_edits(

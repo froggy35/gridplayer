@@ -95,6 +95,7 @@ class GridManager(ManagerBase):
             "ask_fixed_grid_size": self.cmd_ask_fixed_grid_size,
             "get_fixed_grid_size": self.cmd_get_fixed_grid_size,
             "add_videos_to_layout": self.add_videos_to_layout,
+            "add_videos_to_layout_direct": self._add_videos_to_layout,
             "layout_drop": self.cmd_layout_drop,
             "layout_order": lambda: self._layout.order(),
             "shuffle_layout": self.cmd_shuffle_layout,
@@ -235,8 +236,16 @@ class GridManager(ManagerBase):
         self._add_anchor = widget
 
     def add_videos_to_layout(self, videos):
+        # queue mode: new videos wait in the queue for a free cell
+        if self._ctx.is_queue_mode:
+            self._ctx.commands.queue_add(list(videos))
+            return []
+
+        return self._add_videos_to_layout(videos)
+
+    def _add_videos_to_layout(self, videos):
         videos = list(videos)
-        if self._ctx.is_shuffle_on_load:
+        if self._ctx.is_shuffle_on_load and not self._ctx.is_queue_mode:
             random.shuffle(videos)
 
         anchor = self._add_anchor
@@ -478,6 +487,11 @@ class GridManager(ManagerBase):
 
         if src_block is not None:
             self._drop_move(src_block, dst, row, col, zone, is_replace, dst_id)
+            return
+
+        # queue mode: dropped files join the queue instead of the grid
+        if self._ctx.is_queue_mode:
+            self._ctx.commands.queue_add(list(videos))
             return
 
         self._drop_new(videos, dst, row, col, zone, is_replace, dst_id)

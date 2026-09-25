@@ -56,6 +56,13 @@ ACTIONS = MappingProxyType(
             "func": "next_single_video",
             "show_if": AND("is_single_mode", "is_more_than_one_video"),
         },
+        "Queue Next Video": {
+            "title": translate("Queue", "Next Video From Queue"),
+            "key": "Alt+N",
+            "icon": "next-video-file",
+            "func": ("active", "queue_skip"),
+            "show_if": "is_queue_mode",
+        },
         "Play Previous File": {
             "title": translate("Actions", "Play Previous File"),
             "key": "PgUp",
@@ -1657,6 +1664,32 @@ ACTIONS = MappingProxyType(
             "icon": "loop-random",
             "func": "toggle_shuffle_on_load",
             "check_if": "is_shuffle_on_load",
+        },
+        "Queue Mode": {
+            "title": translate("Queue", "Queue Mode"),
+            "key": "Alt+Q",
+            "icon": "open-playlist",
+            "func": "toggle_queue_mode",
+            "check_if": "is_queue_mode",
+        },
+        "Queue Slots: %v": {
+            "title": translate("Queue", "Videos At Once: %v"),
+            "icon": "grid-size",
+            "func": "ask_queue_slots",
+            "value_getter": "get_queue_slots",
+        },
+        "Queue Repeat": {
+            "title": translate("Queue", "Repeat Queue"),
+            "icon": "loop-dir",
+            "func": "toggle_queue_repeat",
+            "check_if": "is_queue_repeat",
+        },
+        "Queue Progress: %v": {
+            "title": translate("Queue", "Queue: %v"),
+            "icon": "playlist-settings",
+            "func": "get_queue_progress",
+            "value_getter": "get_queue_progress",
+            "show_if": "is_queue_mode",
         },
         "Rows First": {
             "title": translate("Grid Mode", "Auto (Rows First)"),

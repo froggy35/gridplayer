@@ -15,6 +15,7 @@ from gridplayer.player.managers.macos_fileopen import MacOSFileOpenManager
 from gridplayer.player.managers.menu import MenuManager
 from gridplayer.player.managers.mouse_hide import MouseHideManager
 from gridplayer.player.managers.playlist import PlaylistManager
+from gridplayer.player.managers.queue import QueueManager
 from gridplayer.player.managers.recent_list import RecentListManager
 from gridplayer.player.managers.screensaver import ScreensaverManager
 from gridplayer.player.managers.settings import SettingsManager
@@ -41,6 +42,7 @@ class Player(QWidget, ManagersManager):
             "video_blocks": VideoBlocksManager,
             "grid": GridManager,
             "playlist": PlaylistManager,
+            "queue": QueueManager,
             "snapshots": SnapshotsManager,
             "screensaver": ScreensaverManager,
             "active_block": ActiveBlockManager,
@@ -172,9 +174,13 @@ class Player(QWidget, ManagersManager):
                     "subtitle_encoding_loaded",
                     "video_blocks.apply_subtitle_encoding",
                 ),
-                ("videos_loaded", "video_blocks.add_videos"),
+                ("videos_loaded", "queue.on_videos_loaded"),
                 ("alert", "window_state.activate_window"),
                 ("error", "dialogs.error"),
+            ],
+            "queue": [
+                ("video_blocks.queue_slot_finished", "on_slot_finished"),
+                ("playlist.playlist_closed", "on_playlist_closed"),
             ],
             "snapshots": [
                 ("grid_state_loaded", "grid.set_grid_state"),

@@ -109,6 +109,9 @@ class VideoBlocksManager(ManagerBase):
 
     reload_all_closed = pyqtSignal()
 
+    # queue mode: a cell finished its video (block id)
+    queue_slot_finished = pyqtSignal(str)
+
     hide_overlay = pyqtSignal()
     show_overlay = pyqtSignal()
     set_drag_ui = pyqtSignal(bool)
@@ -522,6 +525,7 @@ class VideoBlocksManager(ManagerBase):
 
         qt_connect(
             (vb.about_to_close, self.close_single),
+            (vb.queue_end_reached, self.queue_slot_finished),
             (vb.is_paused_change, self.playing_count_change),
             (vb.sync_percent, self.seek_sync_percent),
             (vb.sync_time, self.seek_sync_timecode),
