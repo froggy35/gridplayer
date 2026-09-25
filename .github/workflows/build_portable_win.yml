@@ -1,0 +1,55 @@
+name: build portable (windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build_portable:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: extractions/setup-just@v4
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+          architecture: x64
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install requirements
+        uses: crazy-max/ghaction-chocolatey@v4
+        with:
+          args: install wget zip
+
+      - name: Export requirements
+        run: just build-requirements
+
+      - name: Build
+        env:
+          BUILD_ARCH: win64
+        run: just build-win-pyinstaller
+
+      - name: Make it portable
+        run: |
+          APP_NAME=$(sed -n 's/__app_name__ = "\([^"]*\).*/\1/p' gridplayer/version.py)
+          mkdir -p "dist/$APP_NAME/portable_data"
+          echo "GridPlayer keeps its settings here (portable mode)." > "dist/$APP_NAME/portable_data/README.txt"
+          echo "APP_NAME=$APP_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload portable version
+        uses: actions/upload-artifact@v7
+        with:
+          name: GridPlayer-QueueMode-win64-portable
+          path: dist/${{ env.APP_NAME }}
+          retention-days: 30
