@@ -31,8 +31,12 @@ class QueueManager(ManagerBase):
         # remembered between starts (per copy, in the portable version)
         self._slots = min(max(Settings().get("queue/slots"), 1), MAX_SLOTS)
         self._is_repeat = Settings().get("queue/repeat")
+        self._is_shuffle = Settings().get("queue/shuffle")
 
-        # templates of every video in the playlist, in playlist order
+        # templates of every video, in the order they were added
+        self._playlist: list[Video] = []
+        # the same videos in the order this round plays them
+        # (playlist order, or shuffled)
         self._queue: list[Video] = []
         # index of the next template to hand out
         self._cursor = 0
@@ -46,6 +50,8 @@ class QueueManager(ManagerBase):
             "get_queue_slots": lambda: str(self._slots),
             "toggle_queue_repeat": self.toggle_queue_repeat,
             "is_queue_repeat": lambda: self._is_repeat,
+            "toggle_queue_shuffle": self.toggle_queue_shuffle,
+            "is_queue_shuffle": lambda: self._is_shuffle,
             "toggle_queue_autostart": self.toggle_queue_autostart,
             "is_queue_autostart": lambda: Settings().get("queue/autostart"),
             "get_queue_progress": self.get_queue_progress,
@@ -71,8 +77,13 @@ class QueueManager(ManagerBase):
 
         blocks = self._blocks_in_grid_order()
 
-        self._queue = [_template_from(vb.video_params) for vb in blocks]
+        self._playlist = [_template_from(vb.video_params) for vb in blocks]
+        self._queue = list(self._playlist)
         self._cursor = min(self._slots, len(self._queue))
+
+        # what is on screen stays, the rest waits in random order
+        if self._is_shuffle:
+            self._shuffle_unplayed()
 
         extra = blocks[self._slots :]
         if extra:
@@ -86,6 +97,7 @@ class QueueManager(ManagerBase):
         """Keep whatever is playing, forget the queue."""
 
         self._ctx.is_queue_mode = False
+        self._playlist = []
         self._queue = []
         self._cursor = 0
 
@@ -125,6 +137,32 @@ class QueueManager(ManagerBase):
         self._is_repeat = not self._is_repeat
         Settings().set("queue/repeat", self._is_repeat)
 
+    def toggle_queue_shuffle(self):
+        self._is_shuffle = not self._is_shuffle
+        Settings().set("queue/shuffle", self._is_shuffle)
+
+        if self._is_shuffle:
+            # mix up what has not been played yet in this round
+            self._shuffle_unplayed()
+        else:
+            # back to playlist order, carrying on after the videos
+            # this round has already played
+            played = self._queue[: self._cursor]
+            played_ids = {id(t) for t in played}
+            rest = [t for t in self._playlist if id(t) not in played_ids]
+            self._queue = played + rest
+
+    def _shuffle_unplayed(self):
+        unplayed = self._queue[self._cursor :]
+        random.shuffle(unplayed)
+        self._queue[self._cursor :] = unplayed
+
+    def _start_new_round(self):
+        self._queue = list(self._playlist)
+        if self._is_shuffle:
+            random.shuffle(self._queue)
+        self._cursor = 0
+
     def toggle_queue_autostart(self):
         is_autostart = not Settings().get("queue/autostart")
         Settings().set("queue/autostart", is_autostart)
@@ -148,7 +186,12 @@ class QueueManager(ManagerBase):
         if self._ctx.is_shuffle_on_load:
             random.shuffle(videos)
 
+        self._playlist.extend(videos)
         self._queue.extend(videos)
+
+        if self._is_shuffle:
+            # new videos land at random spots among the ones still to come
+            self._shuffle_unplayed()
 
         self._fill_free_slots()
 
@@ -162,6 +205,7 @@ class QueueManager(ManagerBase):
         self._ctx.commands.add_video_blocks(videos)
 
     def on_playlist_closed(self):
+        self._playlist = []
         self._queue = []
         self._cursor = 0
 
@@ -216,7 +260,8 @@ class QueueManager(ManagerBase):
         if self._cursor >= total:
             if not self._is_repeat:
                 return None
-            self._cursor = 0
+            # every video had its turn: next round, freshly shuffled
+            self._start_new_round()
 
         on_screen = {
             str(vb.video_params.uri)

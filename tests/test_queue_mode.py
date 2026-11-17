@@ -47,7 +47,7 @@ class FakeBlocks(list):
 def queue():
     from gridplayer.settings import Settings
 
-    for key in ("queue/slots", "queue/repeat", "queue/autostart"):
+    for key in ("queue/slots", "queue/repeat", "queue/autostart", "queue/shuffle"):
         Settings().reset(key)
 
     ctx = Context()
@@ -77,7 +77,7 @@ def queue():
     ctx.commands.update(manager.commands)
     yield SimpleNamespace(manager=manager, ctx=ctx)
 
-    for key in ("queue/slots", "queue/repeat", "queue/autostart"):
+    for key in ("queue/slots", "queue/repeat", "queue/autostart", "queue/shuffle"):
         Settings().reset(key)
 
 
@@ -327,3 +327,67 @@ def test_no_autostart_by_default(queue):
     restarted = QueueManager(context=queue.ctx, parent=None)
     assert restarted.commands["is_queue_autostart"]() is False
     assert queue.ctx.is_queue_mode is False
+
+
+# --- shuffle ---
+
+
+def _play_round(q, count):
+    """Let cell 0 finish over and over; return what it was handed."""
+    order = []
+    for _ in range(count):
+        _finish(q, 0)
+        order.append(int(_on_screen(q.ctx)[0].split(".")[0]))
+    return order
+
+
+def test_shuffle_plays_every_video_once_per_round(queue):
+    queue.manager.toggle_queue_shuffle()
+    queue.manager.toggle_queue_mode()
+    queue.manager.queue_add([_video(n) for n in range(1, 101)])
+
+    first_four = [int(x.split(".")[0]) for x in _on_screen(queue.ctx)]
+    rest = _play_round(queue, 96)
+
+    played = first_four + rest
+    assert sorted(played) == list(range(1, 101))  # each exactly once
+    assert played != list(range(1, 101))  # but not in playlist order
+
+
+def test_each_round_is_shuffled_anew(queue):
+    queue.manager.toggle_queue_shuffle()
+    queue.manager.toggle_queue_mode()
+    queue.manager.queue_add([_video(n) for n in range(1, 41)])
+
+    _play_round(queue, 36)  # finish round one
+    round_two = _play_round(queue, 40)
+    round_three = _play_round(queue, 40)
+
+    assert round_two != round_three
+
+
+def test_shuffle_off_goes_back_to_playlist_order(queue):
+    queue.manager.toggle_queue_mode()
+    queue.manager.queue_add([_video(n) for n in range(1, 21)])
+
+    queue.manager.toggle_queue_shuffle()
+    queue.manager.toggle_queue_shuffle()  # and off again
+
+    assert _play_round(queue, 3) == [5, 6, 7]
+
+
+def test_shuffle_is_remembered(queue):
+    from gridplayer.settings import Settings
+
+    queue.manager.toggle_queue_shuffle()
+    assert Settings().get("queue/shuffle") is True
+
+    restarted = QueueManager(context=queue.ctx, parent=None)
+    assert restarted.commands["is_queue_shuffle"]() is True
+
+
+def test_shuffle_off_by_default(queue):
+    assert queue.manager.commands["is_queue_shuffle"]() is False
+    queue.manager.toggle_queue_mode()
+    queue.manager.queue_add([_video(n) for n in range(1, 21)])
+    assert _play_round(queue, 3) == [5, 6, 7]

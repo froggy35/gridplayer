@@ -31,7 +31,6 @@ from gridplayer.params.static import (
     SubtitleTrackMode,
     UnsavedChangesMode,
     URLResolver,
-    VideoAnchor,
     VideoAspect,
     VideoCrop,
     VideoDeinterlace,
@@ -115,8 +114,6 @@ _default_settings = {
     "video_defaults/volume": 1.0,
     "video_defaults/color": "#ffffff",
     "video_defaults/crop": VideoCrop(0, 0, 0, 0),
-    "video_defaults/anchor": VideoAnchor.CENTER,
-    "video_defaults/shift_past_edges": False,
     "video_defaults/stream_quality": "best",
     "video_defaults/quality_adapt_delay": 15,
     "video_defaults/network_retry_mode": NetworkRetryMode.TIMES,
@@ -158,12 +155,12 @@ _default_settings = {
     # number on clients that have thought about it separately
     "network/timeout": 0,
     "network/verify_tls": True,
-    # queue mode: how many videos play at once, and whether the queue
-    # starts over after the last video
+    # queue mode: how many videos play at once, whether the queue starts
+    # over after the last video, and whether the player opens in queue mode
     "queue/slots": 4,
     "queue/repeat": True,
-    # open the player in queue mode straight away
     "queue/autostart": False,
+    "queue/shuffle": False,
     "recent_list_videos": RecentListVideos(),
     "recent_list_playlists": RecentListPlaylists(),
 }
