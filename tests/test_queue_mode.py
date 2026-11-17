@@ -45,6 +45,11 @@ class FakeBlocks(list):
 
 @pytest.fixture
 def queue():
+    from gridplayer.settings import Settings
+
+    for key in ("queue/slots", "queue/repeat", "queue/autostart"):
+        Settings().reset(key)
+
     ctx = Context()
     ctx.commands = Commands()
     ctx.video_blocks = FakeBlocks()
@@ -70,7 +75,10 @@ def queue():
 
     manager = QueueManager(context=ctx, parent=None)
     ctx.commands.update(manager.commands)
-    return SimpleNamespace(manager=manager, ctx=ctx)
+    yield SimpleNamespace(manager=manager, ctx=ctx)
+
+    for key in ("queue/slots", "queue/repeat", "queue/autostart"):
+        Settings().reset(key)
 
 
 def _on_screen(ctx):
@@ -264,3 +272,58 @@ def test_queue_load_swaps_the_file_but_keeps_the_cell(mocker):
     assert new.volume == 0.3
     assert new.is_muted is True
     assert new.current_position == 0
+
+
+# --- remembered between starts ---
+
+
+def test_slot_count_is_remembered(queue, mocker):
+    from gridplayer.settings import Settings
+
+    mocker.patch(
+        "gridplayer.player.managers.queue.QCustomSpinboxInput.get_int",
+        return_value=9,
+    )
+    queue.manager.ask_queue_slots()
+    assert Settings().get("queue/slots") == 9
+
+    # a fresh start picks the saved number up
+    restarted = QueueManager(context=queue.ctx, parent=None)
+    assert restarted.commands["get_queue_slots"]() == "9"
+
+
+def test_repeat_is_remembered(queue):
+    from gridplayer.settings import Settings
+
+    queue.manager.toggle_queue_repeat()
+    assert Settings().get("queue/repeat") is False
+
+    restarted = QueueManager(context=queue.ctx, parent=None)
+    assert restarted.commands["is_queue_repeat"]() is False
+
+
+def test_starts_in_queue_mode_when_asked(queue):
+    from gridplayer.settings import Settings
+
+    assert queue.ctx.is_queue_mode is False
+
+    queue.manager.toggle_queue_autostart()
+    assert Settings().get("queue/autostart") is True
+    # switching it on also turns queue mode on right away
+    assert queue.ctx.is_queue_mode is True
+
+    # next start
+    queue.ctx.is_queue_mode = False
+    restarted = QueueManager(context=queue.ctx, parent=None)
+    queue.ctx.commands.update(restarted.commands)
+    assert queue.ctx.is_queue_mode is True
+
+    # videos opened right after the start go into the queue
+    restarted.queue_add([_video(n) for n in range(1, 11)])
+    assert _on_screen(queue.ctx) == ["1.mp4", "2.mp4", "3.mp4", "4.mp4"]
+
+
+def test_no_autostart_by_default(queue):
+    restarted = QueueManager(context=queue.ctx, parent=None)
+    assert restarted.commands["is_queue_autostart"]() is False
+    assert queue.ctx.is_queue_mode is False

@@ -16,9 +16,9 @@ from gridplayer.dialogs.input_dialog import QCustomSpinboxInput
 from gridplayer.models.video import Video
 from gridplayer.params.static import VideoInitialState
 from gridplayer.player.managers.base import ManagerBase
+from gridplayer.settings import Settings
 from gridplayer.utils.qt import translate
 
-DEFAULT_SLOTS = 4
 MAX_SLOTS = 64
 
 
@@ -26,10 +26,11 @@ class QueueManager(ManagerBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._ctx.is_queue_mode = False
+        self._ctx.is_queue_mode = Settings().get("queue/autostart")
 
-        self._slots = DEFAULT_SLOTS
-        self._is_repeat = True
+        # remembered between starts (per copy, in the portable version)
+        self._slots = min(max(Settings().get("queue/slots"), 1), MAX_SLOTS)
+        self._is_repeat = Settings().get("queue/repeat")
 
         # templates of every video in the playlist, in playlist order
         self._queue: list[Video] = []
@@ -45,6 +46,8 @@ class QueueManager(ManagerBase):
             "get_queue_slots": lambda: str(self._slots),
             "toggle_queue_repeat": self.toggle_queue_repeat,
             "is_queue_repeat": lambda: self._is_repeat,
+            "toggle_queue_autostart": self.toggle_queue_autostart,
+            "is_queue_autostart": lambda: Settings().get("queue/autostart"),
             "get_queue_progress": self.get_queue_progress,
             "queue_add": self.queue_add,
         }
@@ -103,6 +106,7 @@ class QueueManager(ManagerBase):
             return
 
         self._slots = slots
+        Settings().set("queue/slots", slots)
 
         if self._ctx.is_queue_mode:
             self._apply_slot_count()
@@ -119,6 +123,15 @@ class QueueManager(ManagerBase):
 
     def toggle_queue_repeat(self):
         self._is_repeat = not self._is_repeat
+        Settings().set("queue/repeat", self._is_repeat)
+
+    def toggle_queue_autostart(self):
+        is_autostart = not Settings().get("queue/autostart")
+        Settings().set("queue/autostart", is_autostart)
+
+        # switching it on means "this is how I want it": go there right away
+        if is_autostart and not self._ctx.is_queue_mode:
+            self._enter_queue_mode()
 
     def get_queue_progress(self):
         if not self._queue:
