@@ -12,11 +12,13 @@ from gridplayer.params import env
 from gridplayer.params.static import OVERLAY_ACTIVITY_EVENT
 from gridplayer.utils.compositor_linux import should_make_overlay_opaque
 from gridplayer.utils.drop_zone import DropIndicator
-from gridplayer.utils.qt import MILLISECONDS, qt_connect
+from gridplayer.utils.qt import MILLISECONDS, qt_connect, translate
 from gridplayer.utils.time_txt import get_time_txt
 from gridplayer.widgets.video_overlay_buttons import (
     OverlayExitButton,
     OverlayPlayPauseButton,
+    OverlaySkipAllButton,
+    OverlaySkipButton,
     OverlayVolumeButton,
 )
 from gridplayer.widgets.video_overlay_elements import (
@@ -54,6 +56,8 @@ class OverlayBlock(QWidget):
     exit_clicked = pyqtSignal()
     play_pause_clicked = pyqtSignal()
     mute_unmute_clicked = pyqtSignal()
+    skip_clicked = pyqtSignal()
+    skip_all_clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -94,6 +98,8 @@ class OverlayBlock(QWidget):
             (self.play_pause_button.clicked, self.play_pause),
             (self.progress_bar.position_changed, self.emit_position),
             (self.volume_button.clicked, self.mute_unmute),
+            (self.skip_button.clicked, self.skip_clicked),
+            (self.skip_all_button.clicked, self.skip_all_clicked),
             (self.volume_bar.position_changed, self.emit_volume_position),
         )
 
@@ -159,7 +165,17 @@ class OverlayBlock(QWidget):
         self.progress_bar_placeholder = QWidget(parent=self)
         self.volume_button = OverlayVolumeButton(parent=self)
 
+        # queue mode only
+        self.skip_button = OverlaySkipButton(parent=self)
+        self.skip_button.setToolTip(translate("Queue", "Next video in this cell"))
+        self.skip_all_button = OverlaySkipAllButton(parent=self)
+        self.skip_all_button.setToolTip(translate("Queue", "Next video in every cell"))
+        self.skip_button.hide()
+        self.skip_all_button.hide()
+
         self.bottom_bar.addWidget(self.play_pause_button)
+        self.bottom_bar.addWidget(self.skip_button)
+        self.bottom_bar.addWidget(self.skip_all_button)
         self.bottom_bar.addWidget(self.label_progress)
         self.bottom_bar.addWidget(self.progress_bar, 1)
         self.bottom_bar.addWidget(self.progress_bar_placeholder, 1)
@@ -324,6 +340,10 @@ class OverlayBlock(QWidget):
         too_narrow_to_fit = 250
         is_wide = self.width() > too_narrow_to_fit
         self.label_progress.setVisible(is_wide or not self.progress_bar.isEnabled())
+
+    def set_queue_buttons_visible(self, is_visible: bool):
+        self.skip_button.setVisible(is_visible)
+        self.skip_all_button.setVisible(is_visible)
 
     @pyqtSlot(bool)
     def set_volume_button_visible(self, is_visible):

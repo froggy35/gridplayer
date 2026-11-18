@@ -34,6 +34,9 @@ class FakeBlock:
     def stop_playback(self):
         self.stopped = True
 
+    def update_queue_buttons(self):
+        self.buttons_updated = getattr(self, "buttons_updated", 0) + 1
+
 
 class FakeBlocks(list):
     def by_id(self, _id):
@@ -391,3 +394,71 @@ def test_shuffle_off_by_default(queue):
     queue.manager.toggle_queue_mode()
     queue.manager.queue_add([_video(n) for n in range(1, 21)])
     assert _play_round(queue, 3) == [5, 6, 7]
+
+
+# --- skip buttons ---
+
+
+def test_skip_all_moves_every_cell_on(queue):
+    queue.manager.toggle_queue_mode()
+    queue.manager.queue_add([_video(n) for n in range(1, 101)])
+
+    queue.manager.queue_skip_all()
+
+    assert _on_screen(queue.ctx) == ["5.mp4", "6.mp4", "7.mp4", "8.mp4"]
+    assert queue.manager.get_queue_progress() == "8 / 100"
+
+
+def test_skip_all_does_nothing_outside_queue_mode(queue):
+    queue.ctx.commands.add_videos_to_layout_direct([_video(1), _video(2)])
+    queue.manager.queue_skip_all()
+    assert all(not b.loaded for b in queue.ctx.video_blocks)
+
+
+def test_cells_are_told_when_queue_mode_changes(queue):
+    queue.ctx.commands.add_videos_to_layout_direct([_video(1), _video(2)])
+    blocks = list(queue.ctx.video_blocks)
+
+    queue.manager.toggle_queue_mode()
+    queue.manager.toggle_queue_mode()
+
+    assert all(b.buttons_updated == 2 for b in blocks)
+
+
+def test_overlay_skip_buttons_only_in_queue_mode():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+
+    assert overlay.skip_button.isHidden()
+    assert overlay.skip_all_button.isHidden()
+
+    overlay.set_queue_buttons_visible(True)
+    assert not overlay.skip_button.isHidden()
+    assert not overlay.skip_all_button.isHidden()
+
+    overlay.set_queue_buttons_visible(False)
+    assert overlay.skip_button.isHidden()
+
+
+def test_overlay_skip_buttons_send_their_clicks():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+    received = []
+    overlay.skip_clicked.connect(lambda: received.append("one"))
+    overlay.skip_all_clicked.connect(lambda: received.append("all"))
+
+    overlay.skip_button.clicked.emit()
+    overlay.skip_all_button.clicked.emit()
+
+    assert received == ["one", "all"]
+
+
+def test_cell_skip_all_asks_the_queue(mocker):
+    block = _mock_block(mocker, is_queue_mode=True)
+    block._ctx.commands = mocker.Mock()
+
+    VideoBlock.queue_skip_all(block)
+
+    block._ctx.commands.queue_skip_all.assert_called_once()

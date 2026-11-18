@@ -82,3 +82,39 @@ def draw_spin_circle(
 
     painter.setPen(QPen(color_bg, 2))
     painter.drawArc(rect_spin, -spin * 16, 16 * 90)
+
+
+def _skip_arrow(painter, x, rect, width, color_fg):
+    path = QPainterPath()
+    path.moveTo(x, rect.y() + 5)
+    path.lineTo(x + width, round(rect.height() / 2))
+    path.lineTo(x, rect.height() - 5)
+    path.lineTo(x, rect.y() + 5)
+    painter.fillPath(path, QBrush(color_fg))
+
+
+def draw_skip(rect, painter, color_fg, color_bg):
+    """Next: a triangle running into a bar."""
+
+    painter.setRenderHint(QPainter.Antialiasing, True)
+    painter.setPen(Qt.NoPen)
+
+    bar_width = 3
+    bar_x = rect.width() - 5 - bar_width
+    _skip_arrow(painter, rect.x() + 5, rect, bar_x - 1 - (rect.x() + 5), color_fg)
+    painter.fillRect(bar_x, rect.y() + 5, bar_width, rect.height() - 10, color_fg)
+
+
+def draw_skip_all(rect, painter, color_fg, color_bg):
+    """Next for every cell: two triangles running into a bar."""
+
+    painter.setRenderHint(QPainter.Antialiasing, True)
+    painter.setPen(Qt.NoPen)
+
+    bar_width = 3
+    bar_x = rect.width() - 4 - bar_width
+    left = rect.x() + 3
+    arrow = (bar_x - 1 - left) / 2
+    _skip_arrow(painter, left, rect, arrow, color_fg)
+    _skip_arrow(painter, left + arrow, rect, arrow, color_fg)
+    painter.fillRect(bar_x, rect.y() + 5, bar_width, rect.height() - 10, color_fg)

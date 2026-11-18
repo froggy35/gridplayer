@@ -469,6 +469,7 @@ SECTIONS = MappingProxyType(
             (
                 "Queue",
                 "Queue Mode",
+                "Queue Next Video [ALL]",
                 "---",
                 "Queue Slots: %v",
                 "Queue Repeat",

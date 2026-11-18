@@ -1684,6 +1684,13 @@ ACTIONS = MappingProxyType(
             "func": "toggle_queue_repeat",
             "check_if": "is_queue_repeat",
         },
+        "Queue Next Video [ALL]": {
+            "title": translate("Queue", "Next Video In Every Cell"),
+            "key": "Shift+Alt+N",
+            "icon": "next-video-file",
+            "func": "queue_skip_all",
+            "show_if": "is_queue_mode",
+        },
         "Queue Shuffle": {
             "title": translate("Queue", "Shuffle Queue"),
             "icon": "loop-random",

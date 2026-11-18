@@ -10,6 +10,8 @@ from gridplayer.widgets.video_overlay_icons import (
     draw_cross,
     draw_pause,
     draw_play,
+    draw_skip,
+    draw_skip_all,
     draw_spin_circle,
     draw_volume_off,
     draw_volume_on,
@@ -169,3 +171,23 @@ class OverlayVolumeButton(OverlayButton):
 
     def icon_off(self, rect, painter, color_fg, color_bg):
         return draw_volume_off(rect, painter, color_fg, color_bg)
+
+
+class OverlaySkipButton(OverlayButton):
+    """Queue mode: this cell moves on to the next video."""
+
+    def icon(self, rect, painter, color_fg, color_bg):
+        return draw_skip(rect, painter, color_fg, color_bg)
+
+    def icon_off(self, rect, painter, color_fg, color_bg):
+        return draw_skip(rect, painter, color_fg, color_bg)
+
+
+class OverlaySkipAllButton(OverlayButton):
+    """Queue mode: every cell moves on to its next video."""
+
+    def icon(self, rect, painter, color_fg, color_bg):
+        return draw_skip_all(rect, painter, color_fg, color_bg)
+
+    def icon_off(self, rect, painter, color_fg, color_bg):
+        return draw_skip_all(rect, painter, color_fg, color_bg)

@@ -571,7 +571,11 @@ class VideoBlock(QWidget):
             (self.info_change, overlay.set_info_label),
             (self.is_active_change, overlay.set_is_active),
             (self.is_audio_present_change, overlay.set_volume_button_visible),
+            (overlay.skip_clicked, self.queue_skip),
+            (overlay.skip_all_clicked, self.queue_skip_all),
         )
+
+        overlay.set_queue_buttons_visible(_is_queue_slot(self))
 
         return overlay
 
@@ -3537,6 +3541,15 @@ class VideoBlock(QWidget):
 
         if _is_queue_slot(self):
             self.queue_end_reached.emit(self.id)
+
+    def queue_skip_all(self):
+        """Every cell moves on to its next video."""
+
+        if _is_queue_slot(self):
+            self._ctx.commands.queue_skip_all()
+
+    def update_queue_buttons(self):
+        self.overlay.set_queue_buttons_visible(_is_queue_slot(self))
 
     def _queue_schedule_error_skip(self):
         if _is_queue_slot(self) and not self._is_closing:

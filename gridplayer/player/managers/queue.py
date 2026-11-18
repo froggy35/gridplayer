@@ -56,6 +56,7 @@ class QueueManager(ManagerBase):
             "is_queue_autostart": lambda: Settings().get("queue/autostart"),
             "get_queue_progress": self.get_queue_progress,
             "queue_add": self.queue_add,
+            "queue_skip_all": self.queue_skip_all,
         }
 
     # --- mode ---
@@ -74,6 +75,7 @@ class QueueManager(ManagerBase):
         """
 
         self._ctx.is_queue_mode = True
+        self._update_queue_buttons()
 
         blocks = self._blocks_in_grid_order()
 
@@ -97,6 +99,7 @@ class QueueManager(ManagerBase):
         """Keep whatever is playing, forget the queue."""
 
         self._ctx.is_queue_mode = False
+        self._update_queue_buttons()
         self._playlist = []
         self._queue = []
         self._cursor = 0
@@ -227,6 +230,19 @@ class QueueManager(ManagerBase):
             )
 
     # --- a slot finished ---
+
+    def queue_skip_all(self):
+        """Every cell moves on to its next video at once."""
+
+        if not self._ctx.is_queue_mode:
+            return
+
+        for vb in self._blocks_in_grid_order():
+            self.on_slot_finished(vb.id)
+
+    def _update_queue_buttons(self):
+        for vb in self._ctx.video_blocks:
+            vb.update_queue_buttons()
 
     def on_slot_finished(self, block_id):
         if not self._ctx.is_queue_mode:
