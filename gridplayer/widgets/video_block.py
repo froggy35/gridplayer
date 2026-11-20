@@ -575,6 +575,7 @@ class VideoBlock(QWidget):
             (overlay.skip_all_clicked, self.queue_skip_all),
             (overlay.random_clicked, self.random_spot),
             (overlay.random_all_clicked, self.random_spot_all),
+            (overlay.mute_all_clicked, self.mute_unmute_all),
         )
 
         overlay.set_queue_buttons_visible(_is_queue_slot(self))
@@ -3549,6 +3550,11 @@ class VideoBlock(QWidget):
 
         if self.is_video_initialized:
             self.manual_seek("seek_random")
+
+    def mute_unmute_all(self):
+        """Mute every video; if they all are already, unmute them all."""
+
+        self._ctx.commands.all_toggle_muted()
 
     def random_spot_all(self):
         """Every video jumps to a random spot, same as Shift+R."""

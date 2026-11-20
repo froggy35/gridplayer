@@ -198,6 +198,7 @@ class VideoBlocksManager(ManagerBase):
     def commands(self):
         return {
             "all": self.cmd_all,
+            "all_toggle_muted": self.cmd_all_toggle_muted,
             "all_play_pause": self.cmd_all_play_pause,
             "all_play": self.cmd_all_play,
             "all_pause": self.cmd_all_pause,
@@ -245,6 +246,15 @@ class VideoBlocksManager(ManagerBase):
 
     def cmd_all(self, command, *args):
         getattr(self, f"all_{command}").emit(*args)
+
+    def cmd_all_toggle_muted(self):
+        # anything still audible -> silence everything, else bring it back
+        is_any_audible = any(
+            not vb.video_params.is_muted
+            for vb in self._ctx.video_blocks
+            if vb.video_params is not None
+        )
+        self.all_set_muted.emit(is_any_audible)
 
     def cmd_all_play_pause(self):
         is_at_least_one_unpaused = bool(self._ctx.video_blocks.unpaused)

@@ -293,6 +293,7 @@ SECTIONS = MappingProxyType(
                     "---",
                     "Audio Volume - Increase [ALL]",
                     "Audio Volume - Decrease [ALL]",
+                    "Audio Volume - Toggle Mute [ALL]",
                     "Audio Volume - Mute [ALL]",
                     "Audio Volume - Unmute [ALL]",
                 ),

@@ -172,3 +172,27 @@ def draw_random_all(rect, painter, color_fg, color_bg):
     _die(
         painter, x2, y2, size, ((0.3, 0.3), (0.5, 0.5), (0.7, 0.7)), color_fg, color_bg
     )
+
+
+def _speaker(painter, x, cy, height, color_fg):
+    path = QPainterPath()
+    path.moveTo(x, cy - height * 0.18)
+    path.lineTo(x + height * 0.22, cy - height * 0.18)
+    path.lineTo(x + height * 0.45, cy - height * 0.42)
+    path.lineTo(x + height * 0.45, cy + height * 0.42)
+    path.lineTo(x + height * 0.22, cy + height * 0.18)
+    path.lineTo(x, cy + height * 0.18)
+    path.closeSubpath()
+    painter.fillPath(path, QBrush(color_fg))
+
+
+def draw_mute_all(rect, painter, color_fg, color_bg):
+    """Mute / unmute every video: two speakers side by side."""
+
+    painter.setRenderHint(QPainter.Antialiasing, True)
+    painter.setPen(Qt.NoPen)
+
+    height = rect.height() - 8
+    cy = rect.y() + rect.height() / 2
+    _speaker(painter, rect.x() + 3, cy, height, color_fg)
+    _speaker(painter, rect.x() + 3 + height * 0.55, cy, height, color_fg)

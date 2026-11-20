@@ -16,6 +16,7 @@ from gridplayer.utils.qt import MILLISECONDS, qt_connect, translate
 from gridplayer.utils.time_txt import get_time_txt
 from gridplayer.widgets.video_overlay_buttons import (
     OverlayExitButton,
+    OverlayMuteAllButton,
     OverlayPlayPauseButton,
     OverlayRandomAllButton,
     OverlayRandomButton,
@@ -62,6 +63,7 @@ class OverlayBlock(QWidget):
     skip_all_clicked = pyqtSignal()
     random_clicked = pyqtSignal()
     random_all_clicked = pyqtSignal()
+    mute_all_clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -106,6 +108,7 @@ class OverlayBlock(QWidget):
             (self.skip_all_button.clicked, self.skip_all_clicked),
             (self.random_button.clicked, self.random_clicked),
             (self.random_all_button.clicked, self.random_all_clicked),
+            (self.mute_all_button.clicked, self.mute_all_clicked),
             (self.volume_bar.position_changed, self.emit_volume_position),
         )
 
@@ -195,6 +198,10 @@ class OverlayBlock(QWidget):
         self.bottom_bar.addWidget(self.progress_bar, 1)
         self.bottom_bar.addWidget(self.progress_bar_placeholder, 1)
         self.bottom_bar.addWidget(self.volume_button)
+
+        self.mute_all_button = OverlayMuteAllButton(parent=self)
+        self.mute_all_button.setToolTip(translate("Queue", "Mute / unmute all videos"))
+        self.bottom_bar.addWidget(self.mute_all_button)
 
         self.floating_progress = OverlayShortLabelFloating(parent=self)
 

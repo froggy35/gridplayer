@@ -1589,6 +1589,13 @@ ACTIONS = MappingProxyType(
             "show_if": "is_any_videos_have_audio",
             "func": ("all", "set_muted", True),
         },
+        "Audio Volume - Toggle Mute [ALL]": {
+            "title": translate("Audio Volume", "Mute / Unmute All"),
+            "key": "Shift+M",
+            "icon": "volume-mute",
+            "show_if": "is_any_videos_have_audio",
+            "func": "all_toggle_muted",
+        },
         "Audio Volume - Unmute [ALL]": {
             "title": translate("Audio Volume", "Unmute"),
             "icon": "volume-unmute",

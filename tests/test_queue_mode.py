@@ -528,3 +528,46 @@ def test_random_spot_all_does_what_shift_r_does(mocker):
     VideoBlock.random_spot_all(block)
 
     block._ctx.commands.all.assert_called_once_with("seek_random")
+
+
+# --- mute / unmute all ---
+
+
+def _toggle_mute(mocker, muted_states):
+    from gridplayer.player.managers.video_blocks import VideoBlocksManager
+
+    manager = mocker.Mock()
+    manager._ctx.video_blocks = [
+        SimpleNamespace(video_params=SimpleNamespace(is_muted=m)) for m in muted_states
+    ]
+    VideoBlocksManager.cmd_all_toggle_muted(manager)
+    return manager.all_set_muted.emit.call_args.args[0]
+
+
+def test_mute_all_silences_everything_when_some_play(mocker):
+    assert _toggle_mute(mocker, [False, False, False]) is True
+    assert _toggle_mute(mocker, [True, False, True]) is True
+
+
+def test_mute_all_brings_sound_back_when_all_silent(mocker):
+    assert _toggle_mute(mocker, [True, True, True]) is False
+
+
+def test_mute_all_button_is_there_and_sends_clicks():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+    assert not overlay.mute_all_button.isHidden()
+
+    received = []
+    overlay.mute_all_clicked.connect(lambda: received.append("mute all"))
+    overlay.mute_all_button.clicked.emit()
+    assert received == ["mute all"]
+
+
+def test_cell_mute_all_asks_every_video(mocker):
+    block = mocker.Mock()
+
+    VideoBlock.mute_unmute_all(block)
+
+    block._ctx.commands.all_toggle_muted.assert_called_once()

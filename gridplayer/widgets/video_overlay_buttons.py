@@ -8,6 +8,7 @@ from gridplayer.utils.qt import QABC
 from gridplayer.widgets.video_overlay_elements import OverlayWidget
 from gridplayer.widgets.video_overlay_icons import (
     draw_cross,
+    draw_mute_all,
     draw_pause,
     draw_play,
     draw_random,
@@ -213,3 +214,13 @@ class OverlayRandomAllButton(OverlayButton):
 
     def icon_off(self, rect, painter, color_fg, color_bg):
         return draw_random_all(rect, painter, color_fg, color_bg)
+
+
+class OverlayMuteAllButton(OverlayButton):
+    """Mute every video, or unmute them all if they already are."""
+
+    def icon(self, rect, painter, color_fg, color_bg):
+        return draw_mute_all(rect, painter, color_fg, color_bg)
+
+    def icon_off(self, rect, painter, color_fg, color_bg):
+        return draw_mute_all(rect, painter, color_fg, color_bg)
