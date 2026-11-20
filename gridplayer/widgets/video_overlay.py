@@ -17,6 +17,8 @@ from gridplayer.utils.time_txt import get_time_txt
 from gridplayer.widgets.video_overlay_buttons import (
     OverlayExitButton,
     OverlayPlayPauseButton,
+    OverlayRandomAllButton,
+    OverlayRandomButton,
     OverlaySkipAllButton,
     OverlaySkipButton,
     OverlayVolumeButton,
@@ -58,6 +60,8 @@ class OverlayBlock(QWidget):
     mute_unmute_clicked = pyqtSignal()
     skip_clicked = pyqtSignal()
     skip_all_clicked = pyqtSignal()
+    random_clicked = pyqtSignal()
+    random_all_clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -100,6 +104,8 @@ class OverlayBlock(QWidget):
             (self.volume_button.clicked, self.mute_unmute),
             (self.skip_button.clicked, self.skip_clicked),
             (self.skip_all_button.clicked, self.skip_all_clicked),
+            (self.random_button.clicked, self.random_clicked),
+            (self.random_all_button.clicked, self.random_all_clicked),
             (self.volume_bar.position_changed, self.emit_volume_position),
         )
 
@@ -176,6 +182,15 @@ class OverlayBlock(QWidget):
         self.bottom_bar.addWidget(self.play_pause_button)
         self.bottom_bar.addWidget(self.skip_button)
         self.bottom_bar.addWidget(self.skip_all_button)
+
+        self.random_button = OverlayRandomButton(parent=self)
+        self.random_button.setToolTip(translate("Queue", "Random spot in this video"))
+        self.random_all_button = OverlayRandomAllButton(parent=self)
+        self.random_all_button.setToolTip(
+            translate("Queue", "Random spot in every video")
+        )
+        self.bottom_bar.addWidget(self.random_button)
+        self.bottom_bar.addWidget(self.random_all_button)
         self.bottom_bar.addWidget(self.label_progress)
         self.bottom_bar.addWidget(self.progress_bar, 1)
         self.bottom_bar.addWidget(self.progress_bar_placeholder, 1)
@@ -327,9 +342,13 @@ class OverlayBlock(QWidget):
             self.play_pause_button.show()
             self.volume_button.hide()
             self.volume_bar.hide()
+            self.random_button.hide()
+            self.random_all_button.hide()
             return
 
         self.play_pause_button.show()
+        self.random_button.show()
+        self.random_all_button.show()
         self._sync_volume_chrome()
         self._sync_progress_label()
 

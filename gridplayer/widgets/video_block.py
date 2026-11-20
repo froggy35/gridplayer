@@ -573,6 +573,8 @@ class VideoBlock(QWidget):
             (self.is_audio_present_change, overlay.set_volume_button_visible),
             (overlay.skip_clicked, self.queue_skip),
             (overlay.skip_all_clicked, self.queue_skip_all),
+            (overlay.random_clicked, self.random_spot),
+            (overlay.random_all_clicked, self.random_spot_all),
         )
 
         overlay.set_queue_buttons_visible(_is_queue_slot(self))
@@ -3541,6 +3543,17 @@ class VideoBlock(QWidget):
 
         if _is_queue_slot(self):
             self.queue_end_reached.emit(self.id)
+
+    def random_spot(self):
+        """This video jumps to a random spot, same as the R key."""
+
+        if self.is_video_initialized:
+            self.manual_seek("seek_random")
+
+    def random_spot_all(self):
+        """Every video jumps to a random spot, same as Shift+R."""
+
+        self._ctx.commands.all("seek_random")
 
     def queue_skip_all(self):
         """Every cell moves on to its next video."""

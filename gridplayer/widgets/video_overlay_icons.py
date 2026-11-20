@@ -1,6 +1,6 @@
 import math
 
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import QPointF, QRect, Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
 
 
@@ -118,3 +118,57 @@ def draw_skip_all(rect, painter, color_fg, color_bg):
     _skip_arrow(painter, left, rect, arrow, color_fg)
     _skip_arrow(painter, left + arrow, rect, arrow, color_fg)
     painter.fillRect(bar_x, rect.y() + 5, bar_width, rect.height() - 10, color_fg)
+
+
+def _die(painter, x, y, size, pips, color_fg, color_bg):
+    """One die face: a rounded square with pips cut out of it."""
+
+    painter.setPen(Qt.NoPen)
+    path = QPainterPath()
+    path.addRoundedRect(x, y, size, size, size * 0.2, size * 0.2)
+    painter.fillPath(path, QBrush(color_fg))
+
+    painter.setBrush(QBrush(color_bg))
+    pip = max(size * 0.14, 1.5)
+    for px, py in pips:
+        painter.drawEllipse(QPointF(x + size * px, y + size * py), pip, pip)
+
+
+def draw_random(rect, painter, color_fg, color_bg):
+    """Jump to a random spot: a single die showing three."""
+
+    painter.setRenderHint(QPainter.Antialiasing, True)
+
+    size = min(rect.width(), rect.height()) - 8
+    x = rect.x() + (rect.width() - size) / 2
+    y = rect.y() + (rect.height() - size) / 2
+    _die(
+        painter,
+        x,
+        y,
+        size,
+        ((0.27, 0.27), (0.5, 0.5), (0.73, 0.73)),
+        color_fg,
+        color_bg,
+    )
+
+
+def draw_random_all(rect, painter, color_fg, color_bg):
+    """Every cell jumps to a random spot: two dice."""
+
+    painter.setRenderHint(QPainter.Antialiasing, True)
+
+    size = (min(rect.width(), rect.height()) - 6) * 0.62
+    x = rect.x() + 3
+    y = rect.y() + 3
+    _die(painter, x, y, size, ((0.3, 0.3), (0.7, 0.7)), color_fg, color_bg)
+
+    # the second die sits on top, with a gap in the background colour
+    x2 = rect.right() - 3 - size
+    y2 = rect.bottom() - 3 - size
+    gap = QPainterPath()
+    gap.addRoundedRect(x2 - 1.5, y2 - 1.5, size + 3, size + 3, size * 0.25, size * 0.25)
+    painter.fillPath(gap, QBrush(color_bg))
+    _die(
+        painter, x2, y2, size, ((0.3, 0.3), (0.5, 0.5), (0.7, 0.7)), color_fg, color_bg
+    )

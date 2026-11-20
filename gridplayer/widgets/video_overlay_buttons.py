@@ -10,6 +10,8 @@ from gridplayer.widgets.video_overlay_icons import (
     draw_cross,
     draw_pause,
     draw_play,
+    draw_random,
+    draw_random_all,
     draw_skip,
     draw_skip_all,
     draw_spin_circle,
@@ -191,3 +193,23 @@ class OverlaySkipAllButton(OverlayButton):
 
     def icon_off(self, rect, painter, color_fg, color_bg):
         return draw_skip_all(rect, painter, color_fg, color_bg)
+
+
+class OverlayRandomButton(OverlayButton):
+    """This cell jumps to a random spot."""
+
+    def icon(self, rect, painter, color_fg, color_bg):
+        return draw_random(rect, painter, color_fg, color_bg)
+
+    def icon_off(self, rect, painter, color_fg, color_bg):
+        return draw_random(rect, painter, color_fg, color_bg)
+
+
+class OverlayRandomAllButton(OverlayButton):
+    """Every cell jumps to a random spot."""
+
+    def icon(self, rect, painter, color_fg, color_bg):
+        return draw_random_all(rect, painter, color_fg, color_bg)
+
+    def icon_off(self, rect, painter, color_fg, color_bg):
+        return draw_random_all(rect, painter, color_fg, color_bg)

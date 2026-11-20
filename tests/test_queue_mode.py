@@ -462,3 +462,69 @@ def test_cell_skip_all_asks_the_queue(mocker):
     VideoBlock.queue_skip_all(block)
 
     block._ctx.commands.queue_skip_all.assert_called_once()
+
+
+# --- random spot buttons ---
+
+
+def test_random_buttons_always_there():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+
+    assert not overlay.random_button.isHidden()
+    assert not overlay.random_all_button.isHidden()
+
+
+def test_random_buttons_hide_when_stopped():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+
+    overlay.set_is_stopped(True)
+    assert overlay.random_button.isHidden()
+    assert overlay.random_all_button.isHidden()
+
+    overlay.set_is_stopped(False)
+    assert not overlay.random_button.isHidden()
+    assert not overlay.random_all_button.isHidden()
+
+
+def test_random_buttons_send_their_clicks():
+    from gridplayer.widgets.video_overlay import OverlayBlock
+
+    overlay = OverlayBlock()
+    received = []
+    overlay.random_clicked.connect(lambda: received.append("one"))
+    overlay.random_all_clicked.connect(lambda: received.append("all"))
+
+    overlay.random_button.clicked.emit()
+    overlay.random_all_button.clicked.emit()
+
+    assert received == ["one", "all"]
+
+
+def test_random_spot_does_what_the_r_key_does(mocker):
+    block = mocker.Mock()
+    block.is_video_initialized = True
+
+    VideoBlock.random_spot(block)
+
+    block.manual_seek.assert_called_once_with("seek_random")
+
+
+def test_random_spot_waits_for_the_video(mocker):
+    block = mocker.Mock()
+    block.is_video_initialized = False
+
+    VideoBlock.random_spot(block)
+
+    block.manual_seek.assert_not_called()
+
+
+def test_random_spot_all_does_what_shift_r_does(mocker):
+    block = mocker.Mock()
+
+    VideoBlock.random_spot_all(block)
+
+    block._ctx.commands.all.assert_called_once_with("seek_random")
